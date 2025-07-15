@@ -1,0 +1,211 @@
+<!-- === Customize Design Button === -->
+<button id="openCustomizerBtn" class="customize-btn">Customize Design</button>
+<p id="confirmationMsg" style="display:none; color:green; margin-top:15px;">
+    Customization saved and ready for checkout.
+</p>
+
+<a id="checkoutBtn" href="" class="checkout-btn" style="display:none;">Go to Checkout</a>
+
+<!-- === Modal Customizer === -->
+<div id="customizerModal" class="customizer-modal">
+    <div class="customizer-content">
+        <span id="closeCustomizerBtn" class="close-btn">&times;</span>
+
+        <h2>Customize Your T-Shirt</h2>
+
+        <label for="shirtColor">T-Shirt Color</label>
+        <select id="shirtColor">
+            <option value="white">White</option>
+            <option value="black">Black</option>
+            <option value="blue">Blue</option>
+        </select>
+
+        <label for="customMessage">Custom Message</label>
+        <input type="text" id="customMessage" placeholder="Your text here" />
+
+        <label for="fontStyle">Font Style</label>
+        <select id="fontStyle">
+            <option value="Arial">Arial</option>
+            <option value="Courier New">Courier New</option>
+            <option value="Times New Roman">Times New Roman</option>
+        </select>
+
+        <button id="saveDesignBtn" class="save-btn">Save Design</button>
+
+        
+    </div>
+</div>
+
+<!-- === Styles === -->
+<style>
+    .customize-btn {
+        padding: 12px 24px;
+        background-color: #1e40af;
+        color: white;
+        font-size: 16px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+
+    .customize-btn:hover {
+        background-color: #1d4ed8;
+    }
+
+    .customizer-modal {
+        display: none;
+        position: fixed;
+        z-index: 999;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .customizer-content {
+        background: #fff;
+        padding: 30px;
+        border-radius: 16px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        width: 90%;
+        max-width: 450px;
+        position: relative;
+        font-family: 'Helvetica Neue', sans-serif;
+    }
+
+    .close-btn {
+        position: absolute;
+        top: 12px;
+        right: 16px;
+        font-size: 24px;
+        cursor: pointer;
+        color: #555;
+    }
+
+    .customizer-content h2 {
+        margin: 0 0 20px 0;
+        text-align: center;
+        color: #111827;
+    }
+
+    .customizer-content label {
+        display: block;
+        margin-top: 15px;
+        margin-bottom: 5px;
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .customizer-content select,
+    .customizer-content input[type="text"] {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
+
+    .save-btn {
+        margin-top: 20px;
+        background-color: #059669;
+        color: white;
+        font-size: 15px;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 20px;
+        width: 100%;
+        cursor: pointer;
+    }
+
+    .save-btn:hover {
+        background-color: #047857;
+    }
+
+    .checkout-btn {
+        display: block;
+        text-align: center;
+        margin-top: 15px;
+        background-color: #111827;
+        color: white;
+        padding: 10px;
+        border-radius: 8px;
+        text-decoration: none;
+    }
+
+    .checkout-btn:hover {
+        background-color: #1f2937;
+    }
+</style>
+
+<!-- === Script === -->
+<script>
+    const productId = '{{ product.id }}';
+    const tokenKey = 'customizationToken-' + productId;
+
+    window.addEventListener('DOMContentLoaded', async () => {
+        document.getElementById('customizerModal').style.display = 'none';
+        const token = localStorage.getItem(tokenKey);
+        if (token) {
+            try {
+                const res = await fetch(`https://customizer-app-backend.vercel.app/api/customization/${token}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('shirtColor').value = data.color || 'white';
+                    document.getElementById('customMessage').value = data.message || '';
+                    document.getElementById('fontStyle').value = data.font || 'Arial';
+                    document.getElementById('confirmationMsg').innerHTML = 'Saved customization loaded successfully.';
+                    document.getElementById('confirmationMsg').style.display = 'block';
+                    document.getElementById('checkoutBtn').style.display = 'block';
+                }
+            } catch (err) {
+                console.error('Failed to fetch saved design:', err);
+            }
+        }
+    });
+
+    document.getElementById('openCustomizerBtn').addEventListener('click', async () => {
+        document.getElementById('customizerModal').style.display = 'flex';
+    });
+
+    document.getElementById('closeCustomizerBtn').addEventListener('click', () => {
+        document.getElementById('customizerModal').style.display = 'none';
+    });
+
+    document.getElementById('saveDesignBtn').addEventListener('click', async () => {
+        const color = document.getElementById('shirtColor').value;
+        const message = document.getElementById('customMessage').value;
+        const font = document.getElementById('fontStyle').value;
+        const token = localStorage.getItem(tokenKey);
+
+        const designData = {
+            color,
+            message,
+            font,
+            shopify_product_id: productId,
+            token: token || null
+        };
+
+        try {
+            const res = await fetch('https://customizer-app-backend.vercel.app/api/save-customization', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(designData)
+            });
+
+            const data = await res.json();
+            localStorage.setItem(tokenKey, data.token);
+
+            document.getElementById('confirmationMsg').style.display = 'block';
+            document.getElementById('checkoutBtn').style.display = 'block';
+            document.getElementById('customizerModal').style.display = 'none';
+        } catch (err) {
+            alert('Failed to save design. Try again.');
+            console.error(err);
+            document.getElementById('customizerModal').style.display = 'none';
+        }
+    });
+</script>
