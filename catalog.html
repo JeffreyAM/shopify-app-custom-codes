@@ -382,6 +382,33 @@ class PrintfulCatalogManager {
     }
   }
 
+  extractPathFromPrintfulUrl(url) {
+    if (!url) return '/v2/catalog-products';
+    
+    try {
+      // Parse the URL
+      const parsedUrl = new URL(url);
+      
+      // Get the pathname and search (query parameters)
+      const pathname = parsedUrl.pathname;
+      const search = parsedUrl.search;
+      
+      // Extract just the part after /v2/
+      const pathMatch = pathname.match(/\/v2\/(.*)/);
+      
+      if (pathMatch && pathMatch[1]) {
+        return `/v2/${pathMatch[1]}${search}`;
+      }
+      
+      // Fallback to the original path with search
+      return `${pathname}${search}`;
+    } catch (error) {
+      console.warn('Error parsing URL:', error);
+      // If it's not a valid URL, return as is (assuming it's already a path)
+      return url;
+    }
+  }
+
   async fetchWithFallback(path) {
     try {
       // Ensure path starts with a slash
@@ -390,9 +417,8 @@ class PrintfulCatalogManager {
       }
       
       // If path is a full URL, extract just the path portion
-      if (path && path.startsWith('http')) {
-        const url = new URL(path);
-        path = url.pathname.replace('/api/printful', '') + url.search;
+      if (path && path.includes('api.printful.com')) {
+        path = this.extractPathFromPrintfulUrl(path);
       }
       
       const endpoint = `${this.baseUrl}${path}`;
@@ -482,7 +508,8 @@ class PrintfulCatalogManager {
     
     // First page button
     if (this.links.first) {
-      buttons.push(this.createPaginationButton('«', this.links.first.href, 'Go to first page'));
+      const firstPath = this.extractPathFromPrintfulUrl(this.links.first.href);
+      buttons.push(this.createPaginationButton('«', firstPath, 'Go to first page'));
     }
     
     // Previous page button (we need to calculate this)
@@ -505,27 +532,29 @@ class PrintfulCatalogManager {
     
     // Next page button
     if (this.links.next) {
-      buttons.push(this.createPaginationButton('›', this.links.next.href, 'Go to next page'));
+      const nextPath = this.extractPathFromPrintfulUrl(this.links.next.href);
+      buttons.push(this.createPaginationButton('›', nextPath, 'Go to next page'));
     }
     
     // Last page button
     if (this.links.last) {
-      buttons.push(this.createPaginationButton('»', this.links.last.href, 'Go to last page'));
+      const lastPath = this.extractPathFromPrintfulUrl(this.links.last.href);
+      buttons.push(this.createPaginationButton('»', lastPath, 'Go to last page'));
     }
     
     // Add all buttons to pagination container
     buttons.forEach(button => paginationContainer.appendChild(button));
   }
   
-  createPaginationButton(text, url, title) {
+  createPaginationButton(text, path, title) {
     const button = document.createElement('button');
     button.className = 'pagination-button';
     button.textContent = text;
     button.title = title;
-    button.setAttribute('data-url', url);
+    button.setAttribute('data-path', path);
     
     button.addEventListener('click', () => {
-      this.loadCatalog(url);
+      this.loadCatalog(path);
     });
     
     return button;
