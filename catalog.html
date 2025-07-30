@@ -662,9 +662,7 @@ class PrintfulCatalogManager {
     console.log('Starting customization for product:', this.selectedProduct);
     
     // For now, show an alert - replace with actual customization flow
-    alert(`Starting customization for: ${this.selectedProduct.name}\n\nNext step: Initialize Printful EDM for product ID ${this.selectedProduct.id}`);
-    
-    this.closeModal();
+    window.location.href = `/pages/customize-product?id=${this.selectedProduct.id}`;
   }
 }
 

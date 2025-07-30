@@ -1,0 +1,178 @@
+{% schema %}
+{
+  "name": "Printful Designer",
+  "settings": [
+    {
+      "type": "text",
+      "id": "section_title",
+      "label": "Section Title",
+      "default": "Customize Your Product"
+    },
+    {
+      "type": "text",
+      "id": "edm_container",
+      "label": "EDM Container ID",
+      "default": "printful-edm-container"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_product_selector",
+      "label": "Show Product Selector",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "Layout",
+      "options": [
+        {
+          "value": "fullwidth",
+          "label": "Full Width"
+        },
+        {
+          "value": "contained",
+          "label": "Contained"
+        }
+      ],
+      "default": "contained"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Printful Designer",
+      "category": "Custom Content"
+    }
+  ]
+}
+{% endschema %}
+
+<style>
+.edm-iframe{
+width: 100%;
+height: 100%;
+}
+
+.printful-edm-container{
+width: 100%;
+height: 90vh;
+}
+#save-design-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background-color: #e53935; /* Red */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    display: none; /* Hidden by default */
+    z-index: 1000;
+    transition: background-color 0.2s ease;
+  }
+
+  #save-design-btn:hover {
+    background-color: #d32f2f;
+  }
+</style>
+
+<div class="printful-edm-section {% if section.settings.layout == 'contained' %}container{% endif %}">
+  <h2 class="printful-edm-title">{{ section.settings.section_title }}</h2>
+  
+  {% if section.settings.show_product_selector %}
+  <div class="product-selector-container">
+    <button id="select-product-btn" class="btn">Back to catalog</button>
+  </div>
+  {% endif %}
+  
+  <div id="printful-edm-container" class="printful-edm-container"></div>
+
+ <div>
+  <button id="save-design-btn">Save Design</button>
+</div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize the Printful EDM integration
+    const printfulEDM = new PrintfulEDMIntegration({
+      container: '{{ section.settings.edm_container }}',
+      showProductSelector: {{ section.settings.show_product_selector }}
+    });
+
+
+    
+    // If product selector is enabled, set up the button click handler
+    {% if section.settings.show_product_selector %}
+    document.getElementById('select-product-btn').addEventListener('click', function() {
+      printfulEDM.showProductCatalog();
+    });
+    {% endif %}
+    document.getElementById('save-design-btn').addEventListener('click', function() {
+      printfulEDM.saveDesign();
+    });
+    
+    // Check for product ID in URL parameters (primary method)
+    const urlParams = new URLSearchParams(window.location.search);
+    const productIdFromUrl = urlParams.get('id');
+    
+    if (productIdFromUrl) {
+      // If we have a product ID in the URL, use that
+      printfulEDM.loadProduct(productIdFromUrl);
+    } else {
+      // Fallback to checking sessionStorage
+      const storedProduct = sessionStorage.getItem('printful_selected_product');
+      if (storedProduct) {
+        const product = JSON.parse(storedProduct);
+        printfulEDM.loadProduct(product.id);
+        // Clear the stored product to avoid reloading it on page refresh
+        sessionStorage.removeItem('printful_selected_product');
+      }
+    }
+  });
+</script>
+
+<style>
+  .printful-edm-section {
+    margin: 40px 0;
+  }
+  
+  .printful-edm-title {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .product-selector-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  
+  .printful-edm-container {
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f9f9f9;
+  }
+  
+  .btn {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+  }
+  
+  .btn:hover {
+    background-color: #0069d9;
+  }
+</style>
+
+<!-- Load the PrintfulEDMIntegration class -->
+<script src="{{ 'printful-edm-integration.js' | asset_url }}"></script>

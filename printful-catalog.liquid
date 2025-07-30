@@ -1,0 +1,501 @@
+{% schema %}
+{
+  "name": "Printful Catalog",
+  "settings": [
+    {
+      "type": "text",
+      "id": "header_text",
+      "label": "Header Title",
+      "default": "Customize Your Products"
+    },
+    {
+      "type": "text",
+      "id": "sub_text",
+      "label": "Sub Header",
+      "default": "Select a product to start customizing with our design tool"
+    },
+    {
+      "type": "color",
+      "id": "primary_color",
+      "label": "Primary Button Color",
+      "default": "#007bff"
+    },
+    {
+      "type": "color",
+      "id": "secondary_color",
+      "label": "Secondary Button Color",
+      "default": "#6c757d"
+    },
+    {
+      "type": "range",
+      "id": "card_radius",
+      "label": "Card Border Radius",
+      "min": 0,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "default": 12
+    }
+  ],
+  "presets": [
+    {
+      "name": "Printful Catalog Section"
+    }
+  ]
+}
+{% endschema %}
+
+<div class="printful-catalog-container">
+  <div class="catalog-header">
+    <h1>{{ section.settings.header_text }}</h1>
+    <p>{{ section.settings.sub_text }}</p>
+  </div>
+
+  <!-- Loading State -->
+  <div id="catalog-loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading available products...</p>
+  </div>
+
+  <!-- Error State -->
+  <div id="catalog-error" class="error-state" style="display: none;">
+    <div class="error-message">
+      <h3>Unable to load products</h3>
+      <p id="error-text"></p>
+      <button id="retry-btn" class="btn btn-primary">Try Again</button>
+    </div>
+  </div>
+
+  <!-- Product Grid -->
+  <div id="product-grid" class="product-grid" style="display: none;"></div>
+
+  <!-- Pagination -->
+<div id="pagination-container" class="pagination"></div>
+
+  <!-- Product Selection Modal -->
+  <div id="product-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-product-name"></h3>
+        <span class="close">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div class="product-details">
+          <img id="modal-product-image" src="" alt="" width="100%" height="auto">
+          <div class="product-info">
+            <p id="modal-product-description" style="margin: 0;"></p>
+            <div class="variant-selector">
+              <h4>Available Options:</h4>
+              <div id="variant-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="customize-btn" class="btn btn-primary">Start Customizing</button>
+        <button id="cancel-btn" class="btn btn-secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 20px 0;
+  gap: 8px;
+}
+
+.pagination-button {
+  min-width: 40px;
+  height: 40px;
+  border: 1px solid #ddd;
+  background-color: #fff;
+  color: #333;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.pagination-button:hover {
+  background-color: #f5f5f5;
+  border-color: #999;
+}
+
+.printful-catalog-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.catalog-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.catalog-header h1 {
+  font-size: 2.5rem;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.catalog-header p {
+  font-size: 1.5rem;
+  color: #666;
+}
+
+.loading-state,
+.error-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid {{ section.settings.primary_color }};
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-message h3 {
+  color: #dc3545;
+  margin-bottom: 10px;
+}
+
+.error-message p {
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 24px;
+  margin-top: 30px;
+}
+
+.product-card {
+  border: 1px solid #e0e0e0;
+  border-radius: {{ section.settings.card_radius }}px;
+  padding: 20px;
+  text-align: center;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.product-card:hover {
+  border-color: {{ section.settings.primary_color }};
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.product-card img {
+  width: 100%;
+  max-width: 200px;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.product-card h3 {
+  font-size: 1.7rem;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.product-card p {
+  font-size: 1.2rem;
+  color: #666;
+  margin-bottom: 15px;
+}
+
+.modal {
+  position: fixed;
+  z-index: 1000;
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 0;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 1200px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  padding: 20px 30px;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #333;
+}
+
+.close {
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  color: #999;
+}
+
+.modal-body {
+  padding: 30px;
+}
+
+.product-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+}
+
+.variant-selector h4 {
+  margin-bottom: 15px;
+}
+
+.variant-item {
+  padding: 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  font-size: 1.2rem;
+}
+
+.modal-footer {
+  padding: 20px 30px;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 1.7rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-block;
+}
+
+.btn-primary {
+  background-color: {{ section.settings.primary_color }};
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: darken({{ section.settings.primary_color }}, 10%);
+}
+
+.btn-secondary {
+  background-color: {{ section.settings.secondary_color }};
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: darken({{ section.settings.secondary_color }}, 10%);
+}
+</style>
+
+<script>
+class PrintfulCatalogManager {
+  constructor() {
+    this.apiKey = ''; // Optional: retrieve from metafield
+    this.baseUrl = 'https://customizer-app-backend.vercel.app/api/printful';
+    this.products = [];
+    this.selectedProduct = null;
+    this.paging = null;
+    this.links = null;
+    this.init();
+  }
+
+  init() {
+    this.bindEvents();
+    this.loadCatalog();
+  }
+
+  bindEvents() {
+    document.getElementById('retry-btn')?.addEventListener('click', () => this.loadCatalog());
+    document.querySelector('.close')?.addEventListener('click', () => this.closeModal());
+    document.getElementById('cancel-btn')?.addEventListener('click', () => this.closeModal());
+    document.getElementById('customize-btn')?.addEventListener('click', () => this.startCustomization());
+    window.addEventListener('click', (e) => {
+      if (e.target === document.getElementById('product-modal')) this.closeModal();
+    });
+  }
+
+  async loadCatalog(path = '/v2/catalog-products') {
+    try {
+      this.showLoading();
+      const data = await this.fetchWithFallback(path);
+      this.products = data.data;
+      this.paging = data.paging;
+      this.links = data._links;
+      this.renderProducts();
+    } catch (e) {
+      this.showError(e.message);
+    }
+  }
+
+  async fetchWithFallback(path) {
+    if (!path.startsWith('/')) path = '/' + path;
+    if (path.includes('printful.com')) path = new URL(path).pathname + new URL(path).search;
+    const res = await fetch(`${this.baseUrl}${path}`);
+    return await res.json();
+  }
+
+  showLoading() {
+    document.getElementById('catalog-loading').style.display = 'block';
+    document.getElementById('catalog-error').style.display = 'none';
+    document.getElementById('product-grid').style.display = 'none';
+  }
+
+  showError(message) {
+    document.getElementById('catalog-loading').style.display = 'none';
+    document.getElementById('catalog-error').style.display = 'block';
+    document.getElementById('product-grid').style.display = 'none';
+    document.getElementById('error-text').textContent = message;
+  }
+
+ renderProducts() {
+  const grid = document.getElementById('product-grid');
+  const loading = document.getElementById('catalog-loading');
+  const error = document.getElementById('catalog-error');
+
+  loading.style.display = 'none';
+  error.style.display = 'none';
+  grid.style.display = 'grid';
+
+  if (this.products.length === 0) {
+    grid.innerHTML = '<div class="no-products">No products found</div>';
+    return;
+  }
+
+  grid.innerHTML = this.products.map(product => `
+    <div class="product-card" data-product-id="${product.id}">
+      <img src="${product.image}" alt="${product.name}" />
+      <h3>${product.name}</h3>
+      <p><strong>Brand:</strong> ${product.brand} | <strong>Model:</strong> ${product.model}</p>
+      <p><strong>Variants:</strong> ${product.variant_count}</p>
+    </div>
+  `).join('');
+
+  grid.querySelectorAll('.product-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      const productId = parseInt(e.currentTarget.dataset.productId);
+      this.showProductDetails(productId);
+    });
+  });
+
+  this.renderPagination(); // <- FIXED: render pagination now
+}
+
+renderPagination() {
+  const container = document.getElementById('pagination-container');
+  if (!container || !this.paging || !this.links) return;
+
+  container.innerHTML = '';
+
+  const createBtn = (label, path, title) => {
+    const btn = document.createElement('button');
+    btn.className = 'pagination-button';
+    btn.textContent = label;
+    btn.title = title;
+    btn.onclick = () => this.loadCatalog(path);
+    return btn;
+  };
+
+  if (this.links.first) {
+    container.appendChild(createBtn('«', this.extractPathFromPrintfulUrl(this.links.first.href), 'First'));
+  }
+
+  if (this.paging.offset > 0) {
+    const prevOffset = Math.max(0, this.paging.offset - this.paging.limit);
+    container.appendChild(createBtn('‹', `/v2/catalog-products?limit=${this.paging.limit}&offset=${prevOffset}`, 'Previous'));
+  }
+
+  const currentPage = Math.floor(this.paging.offset / this.paging.limit) + 1;
+  const totalPages = Math.ceil(this.paging.total / this.paging.limit);
+  const info = document.createElement('span');
+  info.className = 'pagination-info';
+  info.textContent = `Page ${currentPage} of ${totalPages}`;
+  container.appendChild(info);
+
+  if (this.links.next) {
+    container.appendChild(createBtn('›', this.extractPathFromPrintfulUrl(this.links.next.href), 'Next'));
+  }
+
+  if (this.links.last) {
+    container.appendChild(createBtn('»', this.extractPathFromPrintfulUrl(this.links.last.href), 'Last'));
+  }
+}
+extractPathFromPrintfulUrl(url) {
+  try {
+    const parsedUrl = new URL(url);
+    return parsedUrl.pathname + parsedUrl.search;
+  } catch (e) {
+    console.error('Failed to parse Printful URL:', url, e);
+    return url; // fallback to raw URL if parsing fails
+  }
+}
+
+  showProductDetails(id) {
+    const p = this.products.find(p => p.id === id);
+    if (!p) return;
+    this.selectedProduct = p;
+    document.getElementById('modal-product-name').textContent = p.name;
+    document.getElementById('modal-product-image').src = p.image;
+    document.getElementById('modal-product-description').innerHTML = `
+      <p style="margin: 0;"><strong>Description:</strong> ${p.description?.replace(/\n/g, '<br>') || 'N/A'}</p>
+      <p><strong>Brand:</strong> ${p.brand}</p>
+      <p><strong>Model:</strong> ${p.model}</p>
+      <p><strong>Available Variants:</strong> ${p.variant_count}</p>
+    `;
+    const variants = p.techniques?.map(t => `<div class="variant-item">${t.display_name}</div>`).join('') || '<div class="variant-item">Standard product sizes</div>';
+    document.getElementById('variant-list').innerHTML = variants;
+    document.getElementById('product-modal').style.display = 'flex';
+  }
+
+  closeModal() {
+    document.getElementById('product-modal').style.display = 'none';
+    this.selectedProduct = null;
+  }
+
+  startCustomization() {
+    if (!this.selectedProduct) return;
+    sessionStorage.setItem('printful_selected_product', JSON.stringify(this.selectedProduct));
+    window.location.href = `/pages/customize-product?id=${this.selectedProduct.id}`;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => new PrintfulCatalogManager());
+</script>
